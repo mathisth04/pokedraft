@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 
 // --- BASE DE DONNÉES DES DRESSEURS ---
 const TRAINERS_DB = [
-  // KANTO
+  // KANTo
   { name: "Pierre", region: "Kanto", role: "gym", type: "Roche" },
   { name: "Ondine", region: "Kanto", role: "gym", type: "Eau" },
   { name: "Major Bob", region: "Kanto", role: "gym", type: "Électrik" },
