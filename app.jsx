@@ -1,5 +1,5 @@
 const { useState, useEffect } = React;
-
+ 
 // --- BASE DE DONNÉES DES 110+ DRESSEURS ---
 const TRAINERS_DB = [
   // KANTO
