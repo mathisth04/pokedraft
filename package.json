@@ -2,7 +2,7 @@
   "name": "poke-draft",
   "private": true,
   "version": "0.0.0",
-  "homepage": "https://[TON_PSEUDO].github.io/poke-draft",
+  "homepage": "https://mathisth04.github.io/pokedraft",
   "type": "module",
   "scripts": {
     "dev": "vite",
