@@ -1,6 +1,6 @@
-const { useState, useEffect } = React;
- 
-// --- BASE DE DONNÉES DES 110+ DRESSEURS ---
+import React, { useState, useEffect, useMemo } from 'react';
+
+// --- BASE DE DONNÉES DES DRESSEURS ---
 const TRAINERS_DB = [
   // KANTO
   { name: "Pierre", region: "Kanto", role: "gym", type: "Roche" },
@@ -77,7 +77,7 @@ const TRAINERS_DB = [
   { name: "Pieris", region: "Unys", role: "4", type: "Ténèbres" },
   { name: "Percila", region: "Unys", role: "4", type: "Psy" },
   { name: "Kunz", region: "Unys", role: "4", type: "Combat" },
-  { name: "Iris", region: "Unys", role: "champion", type: "Dragon" },
+  { name: "Iris (ou Goyah)", region: "Unys", role: "champion", type: "Dragon" },
   // KALOS
   { name: "Violette", region: "Kalos", role: "gym", type: "Insecte" },
   { name: "Lino", region: "Kalos", role: "gym", type: "Roche" },
@@ -94,7 +94,7 @@ const TRAINERS_DB = [
   { name: "Dianthéa", region: "Kalos", role: "champion", type: "Fée" },
   // ALOLA
   { name: "Pectorius", region: "Alola", role: "4", type: "Combat" },
-  { name: "Olala", region: "Alola", role: "4", type: "Roche" },
+  { name: "Olala / Malasada", region: "Alola", role: "4", type: "Roche" },
   { name: "ninjia", region: "Alola", role: "4", type: "Spectre" },
   { name: "Kahili", region: "Alola", role: "4", type: "Vol" },
   { name: "Le Joueur", region: "Alola", role: "champion", type: "Normal" },
@@ -102,7 +102,7 @@ const TRAINERS_DB = [
   { name: "Percy", region: "Galar", role: "gym", type: "Plante" },
   { name: "Donna", region: "Galar", role: "gym", type: "Eau" },
   { name: "Kabu", region: "Galar", role: "gym", type: "Feu" },
-  { name: "Alistair", region: "Galar", role: "gym", type: "Spectre" },
+  { name: "Faïza / Alistair", region: "Galar", role: "gym", type: "Combat" },
   { name: "Lona", region: "Galar", role: "gym", type: "Fée" },
   { name: "Sally", region: "Galar", role: "gym", type: "Fée" },
   { name: "Chaz", region: "Galar", role: "gym", type: "Glace" },
@@ -127,8 +127,8 @@ const TRAINERS_DB = [
 const REGIONS = ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Unys', 'Kalos', 'Alola', 'Galar', 'Paldea'];
 const TYPES = ['Feu', 'Eau', 'Plante', 'Électrik', 'Glace', 'Normal', 'Combat', 'Poison', 'Sol', 'Vol', 'Psy', 'Insecte', 'Roche', 'Spectre', 'Dragon', 'Ténèbres', 'Acier', 'Fée'];
 
-// Base de données simulée pour une réponse instantanée sans requêtes complexes
-const MOCK_POKEDEX = Array.from({ length: 400 }, (_, i) => ({
+// Simulation d'une base de données locale pour la démo
+const MOCK_POKEDEX = Array.from({ length: 300 }, (_, i) => ({
   id: i + 1,
   name: `Pokémon ${i + 1}`,
   types: [TYPES[Math.floor(Math.random() * TYPES.length)]],
@@ -139,28 +139,33 @@ const MOCK_POKEDEX = Array.from({ length: 400 }, (_, i) => ({
   isFullyEvolved: Math.random() < 0.3
 }));
 
-function PokemonApp() {
+export default function PokemonApp() {
   const [phase, setPhase] = useState('menu'); // menu, draft, battle
   const [mode, setMode] = useState('solo'); // solo, pc, 1v1
   
+  // Paramètres
   const [selectedRegions, setSelectedRegions] = useState([...REGIONS]);
   const [selectedTypes, setSelectedTypes] = useState([...TYPES]);
   const [allowDuplicates, setAllowDuplicates] = useState(true);
   const [maxRerolls, setMaxRerolls] = useState(3);
   const [difficulty, setDifficulty] = useState('normal');
 
+  // État du Draft
   const [currentRerolls, setCurrentRerolls] = useState(0);
   const [currentRollTarget, setCurrentRollTarget] = useState({ region: null, type: null });
   const [isRolling, setIsRolling] = useState(false);
   const [availablePokemon, setAvailablePokemon] = useState([]);
   
+  // Équipes
   const [team1, setTeam1] = useState(Array(6).fill(null));
   const [team2, setTeam2] = useState(Array(6).fill(null));
-  const [currentTurn, setCurrentTurn] = useState(1);
+  const [currentTurn, setCurrentTurn] = useState(1); // 1 = team1, 2 = team2
 
+  // État du Combat
   const [battleResults, setBattleResults] = useState([]);
   const [revealedCount, setRevealedCount] = useState(0);
 
+  // Thèmes Glassmorphism
   const getThemeClasses = () => {
     switch(mode) {
       case 'solo': return 'bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600';
@@ -169,6 +174,8 @@ function PokemonApp() {
       default: return 'bg-gradient-to-br from-gray-700 to-gray-900';
     }
   };
+
+  // --- LOGIQUE DE JEU ---
 
   const handleRoll = () => {
     if (currentRerolls <= 0 && currentRollTarget.region) return;
@@ -186,6 +193,7 @@ function PokemonApp() {
         setIsRolling(false);
         if (currentRollTarget.region) setCurrentRerolls(prev => prev - 1);
         
+        // Simuler la récupération des Pokémon
         setTimeout(() => {
           setAvailablePokemon(MOCK_POKEDEX.slice(0, 10 + Math.floor(Math.random() * 5)));
         }, 300);
@@ -225,7 +233,9 @@ function PokemonApp() {
       newTeam1[idx] = pokemon;
       setTeam1(newTeam1);
       
+      // Sélection de l'ordi avec probabilités
       const pcChoice = MOCK_POKEDEX[Math.floor(Math.random() * MOCK_POKEDEX.length)]; 
+      // (Logique de pondération simplifiée ici pour la fluidité)
       
       const newTeam2 = [...team2];
       newTeam2[idx] = pcChoice;
@@ -246,8 +256,8 @@ function PokemonApp() {
     const baseProb = difficulty === 'easy' ? 80 : difficulty === 'normal' ? 65 : 50;
     let bonus = 0;
     team.forEach(p => {
-      if (p && p.isLegendary) bonus += 3;
-      if (p && p.isMythical) bonus += 2;
+      if (p.isLegendary) bonus += 3;
+      if (p.isMythical) bonus += 2;
     });
     return baseProb + bonus;
   };
@@ -266,9 +276,10 @@ function PokemonApp() {
     
     setBattleResults(results);
     setPhase('battle');
-    setRevealedCount(0);
+    setRevealedCount(0); // Réinitialiser le compteur de révélation
   };
 
+  // Révélation progressive des combats
   useEffect(() => {
     if (phase === 'battle' && battleResults.length > 0) {
       const timer = setInterval(() => {
@@ -277,7 +288,7 @@ function PokemonApp() {
           clearInterval(timer);
           return prev;
         });
-      }, 150); // Révélation progressive rapide
+      }, 150); // 150ms par dresseur (Moins d'1.5s garanti)
       
       return () => clearInterval(timer);
     }
@@ -290,6 +301,8 @@ function PokemonApp() {
     resetRollForNext();
     setPhase('draft');
   };
+
+  // --- RENDU DES INTERFACES ---
 
   const renderMenu = () => (
     <div className="flex flex-col items-center p-6 space-y-6 w-full max-w-lg mx-auto">
@@ -336,6 +349,7 @@ function PokemonApp() {
 
   const renderDraft = () => (
     <div className="flex flex-col h-full w-full max-w-2xl mx-auto p-4 space-y-4">
+      {/* Affichage des Équipes */}
       <div className="glass-panel p-4 space-y-4">
         <div className={`transition-all duration-300 ${currentTurn === 1 ? 'scale-105 shadow-[0_0_15px_rgba(255,255,255,0.5)] rounded-xl' : 'opacity-70'}`}>
           <p className="text-white text-center font-bold mb-2" style={{fontFamily: "'VT323', monospace", fontSize: '1.2rem'}}>
@@ -366,6 +380,7 @@ function PokemonApp() {
         )}
       </div>
 
+      {/* Machine à Roll */}
       <div className="glass-panel p-6 flex flex-col items-center justify-center">
         <div className="flex gap-4 mb-6">
           <div className="bg-black/50 border-2 border-white/30 rounded-lg p-4 w-32 h-20 flex items-center justify-center overflow-hidden">
@@ -390,6 +405,7 @@ function PokemonApp() {
         </button>
       </div>
 
+      {/* Sélection Pokémon */}
       {availablePokemon.length > 0 && (
         <div className="glass-panel p-4 flex-1 overflow-y-auto">
           <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
@@ -414,6 +430,7 @@ function PokemonApp() {
     const p2Wins = battleResults.filter(r => r.p2Win).length;
     const total = battleResults.length;
 
+    // Regrouper les résultats révélés par région
     const revealedResults = battleResults.slice(0, revealedCount);
     const resultsByRegion = revealedResults.reduce((acc, result) => {
       if (!acc[result.trainer.region]) acc[result.trainer.region] = [];
@@ -423,6 +440,7 @@ function PokemonApp() {
 
     return (
       <div className="flex flex-col h-full w-full max-w-4xl mx-auto p-4 space-y-4">
+        {/* Header Scores */}
         <div className="glass-panel p-4 flex justify-between items-center text-white" style={{fontFamily: "'VT323', monospace"}}>
           <div className="flex flex-col items-center">
             <span className="text-xl">JOUEUR 1</span>
@@ -442,6 +460,7 @@ function PokemonApp() {
           )}
         </div>
 
+        {/* Liste des Combats Groupés par Région */}
         <div className="glass-panel flex-1 p-4 overflow-y-auto space-y-6">
           {Object.entries(resultsByRegion).map(([region, results]) => (
             <div key={region} className="space-y-2">
@@ -449,6 +468,7 @@ function PokemonApp() {
               <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-2">
                 {results.map((r, i) => (
                   <div key={i} className="bg-black/30 rounded flex flex-col overflow-hidden border border-white/10 animate-fade-in">
+                    {/* Avatar stylisé (généré via dicebear pixel-art) */}
                     <div className="h-12 w-full bg-black/40 flex items-center justify-center p-1 relative">
                        <img src={`https://api.dicebear.com/7.x/pixel-art/svg?seed=${r.trainer.name}`} alt={r.trainer.name} className="h-full w-full object-contain" />
                        <span className="absolute bottom-0 right-0 bg-black/80 text-[8px] text-white px-1 font-bold" style={{fontFamily: "'VT323', monospace"}}>{r.trainer.role.toUpperCase()}</span>
@@ -481,6 +501,24 @@ function PokemonApp() {
 
   return (
     <div className={`min-h-screen w-full transition-colors duration-700 ${getThemeClasses()} overflow-hidden`}>
+      <style dangerouslySetInnerHTML={{__html: `
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+        .glass-panel {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 1.5rem;
+          box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.3s ease-out forwards;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.9); }
+          to { opacity: 1; transform: scale(1); }
+        }
+      `}} />
       <div className="h-screen w-full flex flex-col">
         {phase === 'menu' && renderMenu()}
         {phase === 'draft' && renderDraft()}
@@ -489,7 +527,3 @@ function PokemonApp() {
     </div>
   );
 }
-
-// Lancement de l'application (spécifique à la méthode GitHub sans Vite)
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<PokemonApp />);
