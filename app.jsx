@@ -1,534 +1,529 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Settings, RefreshCw, Home, RotateCcw, Swords, User, Users } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
 
-const REGIONS = [
-  { name: 'Kanto', range: [1, 151] }, { name: 'Johto', range: [152, 251] },
-  { name: 'Hoenn', range: [252, 386] }, { name: 'Sinnoh', range: [387, 493] },
-  { name: 'Unys', range: [494, 649] }, { name: 'Kalos', range: [650, 721] },
-  { name: 'Alola', range: [722, 809] }, { name: 'Galar', range: [810, 898] },
-  { name: 'Paldea', range: [906, 1025] }
+// --- BASE DE DONNÉES DES DRESSEURS ---
+const TRAINERS_DB = [
+  // KANTO
+  { name: "Pierre", region: "Kanto", role: "gym", type: "Roche" },
+  { name: "Ondine", region: "Kanto", role: "gym", type: "Eau" },
+  { name: "Major Bob", region: "Kanto", role: "gym", type: "Électrik" },
+  { name: "Érika", region: "Kanto", role: "gym", type: "Plante" },
+  { name: "Koga (ou Morgane)", region: "Kanto", role: "gym", type: "Poison" },
+  { name: "Morgane", region: "Kanto", role: "gym", type: "Psy" },
+  { name: "Auguste", region: "Kanto", role: "gym", type: "Feu" },
+  { name: "Giovanni", region: "Kanto", role: "gym", type: "Sol" },
+  { name: "Olga", region: "Kanto", role: "4", type: "Glace" },
+  { name: "Aldo", region: "Kanto", role: "4", type: "Combat" },
+  { name: "Agatha", region: "Kanto", role: "4", type: "Spectre" },
+  { name: "Peter", region: "Kanto", role: "4", type: "Dragon" },
+  { name: "Blue", region: "Kanto", role: "champion", type: "Normal" },
+  // JOHTO
+  { name: "Albert", region: "Johto", role: "gym", type: "Vol" },
+  { name: "郝érald", region: "Johto", role: "gym", type: "Insecte" },
+  { name: "Blanche", region: "Johto", role: "gym", type: "Normal" },
+  { name: "Mortimer", region: "Johto", role: "gym", type: "Spectre" },
+  { name: "Chuck", region: "Johto", role: "gym", type: "Combat" },
+  { name: "Jasmine", region: "Johto", role: "gym", type: "Acier" },
+  { name: "Pyroli / Prys", region: "Johto", role: "gym", type: "Glace" },
+  { name: "Écho / Iris", region: "Johto", role: "gym", type: "Dragon" },
+  { name: "Clément", region: "Johto", role: "4", type: "Psy" },
+  { name: "Koga", region: "Johto", role: "4", type: "Poison" },
+  { name: "Aldo", region: "Johto", role: "4", type: "Combat" },
+  { name: "Marion", region: "Johto", role: "4", type: "Ténèbres" },
+  { name: "Peter", region: "Johto", role: "champion", type: "Dragon" },
+  // HOENN
+  { name: "Pierre", region: "Hoenn", role: "gym", type: "Roche" },
+  { name: "Bastien", region: "Hoenn", role: "gym", type: "Combat" },
+  { name: "Voltiz", region: "Hoenn", role: "gym", type: "Électrik" },
+  { name: "Adriane", region: "Hoenn", role: "gym", type: "Feu" },
+  { name: "Norman", region: "Hoenn", role: "gym", type: "Normal" },
+  { name: "Alizée", region: "Hoenn", role: "gym", type: "Vol" },
+  { name: "Léo et Léa", region: "Hoenn", role: "gym", type: "Psy" },
+  { name: "Juan", region: "Hoenn", role: "gym", type: "Eau" },
+  { name: "Damien", region: "Hoenn", role: "4", type: "Ténèbres" },
+  { name: "Spectra", region: "Hoenn", role: "4", type: "Spectre" },
+  { name: "Glacia", region: "Hoenn", role: "4", type: "Glace" },
+  { name: "Aragon", region: "Hoenn", role: "4", type: "Dragon" },
+  { name: "Pierre Rochard", region: "Hoenn", role: "champion", type: "Acier" },
+  // SINNOH
+  { name: "Pierrick", region: "Sinnoh", role: "gym", type: "Roche" },
+  { name: "Flo", region: "Sinnoh", role: "gym", type: "Plante" },
+  { name: "Melissa", region: "Sinnoh", role: "gym", type: "Spectre" },
+  { name: "achille / Lovis", region: "Sinnoh", role: "gym", type: "Eau" },
+  { name: "netCHAMP / Kiméra", region: "Sinnoh", role: "gym", type: "Spectre" },
+  { name: "Damsel / Tanguy", region: "Sinnoh", role: "gym", type: "Électrik" },
+  { name: "Gladys", region: "Sinnoh", role: "gym", type: "Glace" },
+  { name: "Lucio / Tanguy", region: "Sinnoh", role: "gym", type: "Électrik" },
+  { name: "Aaron", region: "Sinnoh", role: "4", type: "Insecte" },
+  { name: "Terry", region: "Sinnoh", role: "4", type: "Sol" },
+  { name: "Adrien", region: "Sinnoh", role: "4", type: "Feu" },
+  { name: "Lucio", region: "Sinnoh", role: "4", type: "Psy" },
+  { name: "Cynthia", region: "Sinnoh", role: "champion", type: "Dragon" },
+  // UNYS
+  { name: "Artie", region: "Unys", role: "gym", type: "Insecte" },
+  { name: "Aloé", region: "Unys", role: "gym", type: "Normal" },
+  { name: "Artus", region: "Unys", role: "gym", type: "Glace" },
+  { name: "Bardane", region: "Unys", role: "gym", type: "Sol" },
+  { name: "Carolina", region: "Unys", role: "gym", type: "Vol" },
+  { name: "Chilis", region: "Unys", role: "gym", type: "Feu" },
+  { name: "Cilan", region: "Unys", role: "gym", type: "Plante" },
+  { name: "Deschamps", region: "Unys", role: "gym", type: "Normal" },
+  { name: "Goyah", region: "Unys", role: "gym", type: "Insecte" },
+  { name: "Inezia", region: "Unys", role: "gym", type: "Électrik" },
+  { name: "Kacham", region: "Unys", role: "gym", type: "Dragon" },
+  { name: "Noa", region: "Unys", role: "gym", type: "Eau" },
+  { name: "Rachid", region: "Unys", role: "gym", type: "Eau" },
+  { name: "Zinzolin", region: "Unys", role: "gym", type: "Glace" },
+  { name: "Anis", region: "Unys", role: "4", type: "Spectre" },
+  { name: "Pieris", region: "Unys", role: "4", type: "Ténèbres" },
+  { name: "Percila", region: "Unys", role: "4", type: "Psy" },
+  { name: "Kunz", region: "Unys", role: "4", type: "Combat" },
+  { name: "Iris (ou Goyah)", region: "Unys", role: "champion", type: "Dragon" },
+  // KALOS
+  { name: "Violette", region: "Kalos", role: "gym", type: "Insecte" },
+  { name: "Lino", region: "Kalos", role: "gym", type: "Roche" },
+  { name: "Cornélia", region: "Kalos", role: "gym", type: "Combat" },
+  { name: "Amarille", region: "Kalos", role: "gym", type: "Plante" },
+  { name: "Lem", region: "Kalos", role: "gym", type: "Électrik" },
+  { name: "Valériane", region: "Kalos", role: "gym", type: "Fée" },
+  { name: "Astrid", region: "Kalos", role: "gym", type: "Psy" },
+  { name: "Ulysse", region: "Kalos", role: "gym", type: "Glace" },
+  { name: "Thyméo", region: "Kalos", role: "4", type: "Acier" },
+  { name: "Malva", region: "Kalos", role: "4", type: "Feu" },
+  { name: "Dracéna", region: "Kalos", role: "4", type: "Dragon" },
+  { name: "Narcisse", region: "Kalos", role: "4", type: "Eau" },
+  { name: "Dianthéa", region: "Kalos", role: "champion", type: "Fée" },
+  // ALOLA
+  { name: "Pectorius", region: "Alola", role: "4", type: "Combat" },
+  { name: "Olala / Malasada", region: "Alola", role: "4", type: "Roche" },
+  { name: "ninjia", region: "Alola", role: "4", type: "Spectre" },
+  { name: "Kahili", region: "Alola", role: "4", type: "Vol" },
+  { name: "Le Joueur", region: "Alola", role: "champion", type: "Normal" },
+  // GALAR
+  { name: "Percy", region: "Galar", role: "gym", type: "Plante" },
+  { name: "Donna", region: "Galar", role: "gym", type: "Eau" },
+  { name: "Kabu", region: "Galar", role: "gym", type: "Feu" },
+  { name: "Faïza / Alistair", region: "Galar", role: "gym", type: "Combat" },
+  { name: "Lona", region: "Galar", role: "gym", type: "Fée" },
+  { name: "Sally", region: "Galar", role: "gym", type: "Fée" },
+  { name: "Chaz", region: "Galar", role: "gym", type: "Glace" },
+  { name: "Roy", region: "Galar", role: "gym", type: "Dragon" },
+  { name: "Tarak", region: "Galar", role: "champion", type: "Feu" },
+  // PALDEA
+  { name: "Émilia", region: "Paldea", role: "gym", type: "Insecte" },
+  { name: "Colza", region: "Paldea", role: "gym", type: "Plante" },
+  { name: "Mashynn", region: "Paldea", role: "gym", type: "Électrik" },
+  { name: "Musara", region: "Paldea", role: "gym", type: "Eau" },
+  { name: "Laïm", region: "Paldea", role: "gym", type: "Spectre" },
+  { name: "Tulia", region: "Paldea", role: "gym", type: "Psy" },
+  { name: "Grusha", region: "Paldea", role: "gym", type: "Glace" },
+  { name: "Seantique", region: "Paldea", role: "gym", type: "Givre" },
+  { name: "Rika", region: "Paldea", role: "4", type: "Sol" },
+  { name: "Popi", region: "Paldea", role: "4", type: "Acier" },
+  { name: "Hassle", region: "Paldea", role: "4", type: "Dragon" },
+  { name: "Okuba", region: "Paldea", role: "4", type: "Vol" },
+  { name: "Alisma", region: "Paldea", role: "champion", type: "Psy" }
 ];
 
-const TYPES = {
-  Feu: 'fire', Eau: 'water', Plante: 'grass', Électrik: 'electric',
-  Glace: 'ice', Normal: 'normal', Combat: 'fighting', Poison: 'poison',
-  Sol: 'ground', Vol: 'flying', Psy: 'psychic', Insecte: 'bug',
-  Roche: 'rock', Spectre: 'ghost', Dragon: 'dragon', Ténèbres: 'dark',
-  Acier: 'steel', Fée: 'fairy'
-};
+const REGIONS = ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Unys', 'Kalos', 'Alola', 'Galar', 'Paldea'];
+const TYPES = ['Feu', 'Eau', 'Plante', 'Électrik', 'Glace', 'Normal', 'Combat', 'Poison', 'Sol', 'Vol', 'Psy', 'Insecte', 'Roche', 'Spectre', 'Dragon', 'Ténèbres', 'Acier', 'Fée'];
 
-const DIFFICULTIES = {
-  easy: { label: 'Easy', baseWinRate: 80 },
-  normal: { label: 'Normal', baseWinRate: 65 },
-  hard: { label: 'Hard', baseWinRate: 50 }
-};
+// Simulation d'une base de données locale pour la démo
+const MOCK_POKEDEX = Array.from({ length: 300 }, (_, i) => ({
+  id: i + 1,
+  name: `Pokémon ${i + 1}`,
+  types: [TYPES[Math.floor(Math.random() * TYPES.length)]],
+  region: REGIONS[Math.floor(Math.random() * REGIONS.length)],
+  sprite: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${i + 1}.png`,
+  isLegendary: Math.random() < 0.05,
+  isMythical: Math.random() < 0.03,
+  isFullyEvolved: Math.random() < 0.3
+}));
 
-const LEGENDARIES = [144,145,146,150,243,244,245,249,250,377,378,379,380,381,382,383,384,480,481,482,483,484,485,486,487,488,638,639,640,641,642,643,644,645,646,716,717,718,772,773,785,786,787,788,789,790,791,792,800,888,889,890,891,892,894,895,896,897,898,1001,1002,1003,1004,1014,1015,1016,1017];
-const MYTHICALS = [151,251,385,386,489,490,491,492,493,494,647,648,649,719,720,721,801,802,807,808,809,893];
-const PSEUDOS = [149,248,373,376,445,635,706,784,887,998];
-
-// Structure simplifiée des dresseurs pour l'exemple (normalement 110)
-const TRAINERS = [
-  { name: 'Pierre', region: 'Kanto', rank: 'gym', sprite: 'https://play.pokemonshowdown.com/sprites/trainers/brock.png' },
-  { name: 'Ondine', region: 'Kanto', rank: 'gym', sprite: 'https://play.pokemonshowdown.com/sprites/trainers/misty.png' },
-  { name: 'Peter', region: 'Kanto', rank: 'champion', sprite: 'https://play.pokemonshowdown.com/sprites/trainers/lance.png' },
-  { name: 'Blanche', region: 'Johto', rank: 'gym', sprite: 'https://play.pokemonshowdown.com/sprites/trainers/whitney.png' },
-  { name: 'Sandra', region: 'Johto', rank: 'gym', sprite: 'https://play.pokemonshowdown.com/sprites/trainers/clair.png' },
-  { name: 'Cynthia', region: 'Sinnoh', rank: 'champion', sprite: 'https://play.pokemonshowdown.com/sprites/trainers/cynthia.png' },
-  { name: 'Goyah', region: 'Unys', rank: 'champion', sprite: 'https://play.pokemonshowdown.com/sprites/trainers/alder.png' },
-  // ... autres dresseurs ajoutés dynamiquement ou via une base de données complète
-];
-
-// Helper pour générer une liste étendue pour la démo
-const generateMockTrainers = (selectedRegions) => {
-    let list = [];
-    selectedRegions.forEach(r => {
-        list.push({ name: `Champion 1 ${r}`, region: r, rank: 'gym', sprite: 'https://play.pokemonshowdown.com/sprites/trainers/ash.png' });
-        list.push({ name: `Champion 8 ${r}`, region: r, rank: 'gym', sprite: 'https://play.pokemonshowdown.com/sprites/trainers/blue.png' });
-        list.push({ name: `Membre C4 ${r}`, region: r, rank: '4', sprite: 'https://play.pokemonshowdown.com/sprites/trainers/karen.png' });
-        list.push({ name: `Maître ${r}`, region: r, rank: 'champion', sprite: 'https://play.pokemonshowdown.com/sprites/trainers/red.png' });
-    });
-    return list;
-};
-
-export default function App() {
-  const [gameState, setGameState] = useState('menu');
-  const [mode, setMode] = useState(null); // 'solo', 'ordi', '1v1'
+export default function PokemonApp() {
+  const [phase, setPhase] = useState('menu'); // menu, draft, battle
+  const [mode, setMode] = useState('solo'); // solo, pc, 1v1
   
-  const [config, setConfig] = useState({
-    regions: REGIONS.map(r => r.name),
-    types: Object.keys(TYPES),
-    rerolls: 3,
-    difficulty: 'normal',
-    allowReuse: false
-  });
+  // Paramètres
+  const [selectedRegions, setSelectedRegions] = useState([...REGIONS]);
+  const [selectedTypes, setSelectedTypes] = useState([...TYPES]);
+  const [allowDuplicates, setAllowDuplicates] = useState(true);
+  const [maxRerolls, setMaxRerolls] = useState(3);
+  const [difficulty, setDifficulty] = useState('normal');
 
-  const [draftState, setDraftState] = useState({
-    team1: [],
-    team2: [],
-    activePlayer: 1,
-    currentRoll: null,
-    rerollsLeft: 0,
-    availablePokemon: [],
-    loading: false,
-    rolling: false,
-    usedPokemonIds: []
-  });
+  // État du Draft
+  const [currentRerolls, setCurrentRerolls] = useState(0);
+  const [currentRollTarget, setCurrentRollTarget] = useState({ region: null, type: null });
+  const [isRolling, setIsRolling] = useState(false);
+  const [availablePokemon, setAvailablePokemon] = useState([]);
+  
+  // Équipes
+  const [team1, setTeam1] = useState(Array(6).fill(null));
+  const [team2, setTeam2] = useState(Array(6).fill(null));
+  const [currentTurn, setCurrentTurn] = useState(1); // 1 = team1, 2 = team2
 
-  const [battleResults, setBattleResults] = useState(null);
-  const rollIntervalRef = useRef(null);
+  // État du Combat
+  const [battleResults, setBattleResults] = useState([]);
+  const [revealedCount, setRevealedCount] = useState(0);
 
-  const themeColors = {
-    solo: 'bg-gradient-to-br from-cyan-600 via-blue-800 to-indigo-900',
-    ordi: 'bg-gradient-to-br from-red-600 via-orange-800 to-red-950',
-    '1v1': 'bg-gradient-to-br from-purple-600 via-fuchsia-800 to-indigo-950',
-    default: 'bg-gradient-to-br from-slate-700 via-gray-800 to-slate-900'
+  // Thèmes Glassmorphism
+  const getThemeClasses = () => {
+    switch(mode) {
+      case 'solo': return 'bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600';
+      case 'pc': return 'bg-gradient-to-br from-rose-500 via-red-600 to-orange-700';
+      case '1v1': return 'bg-gradient-to-br from-emerald-400 via-green-500 to-teal-700';
+      default: return 'bg-gradient-to-br from-gray-700 to-gray-900';
+    }
   };
 
-  const currentTheme = mode ? themeColors[mode] : themeColors.default;
-  const glassCard = "bg-white/10 backdrop-blur-md border border-white/20 shadow-[0_4px_30px_rgba(0,0,0,0.1)] rounded-2xl";
+  // --- LOGIQUE DE JEU ---
 
-  const startDraft = () => {
-    setGameState('draft');
-    setDraftState({
-      team1: [], team2: [], activePlayer: 1, currentRoll: null, 
-      rerollsLeft: config.rerolls, availablePokemon: [], loading: false, 
-      rolling: false, usedPokemonIds: []
-    });
-    executeRoll(1);
-  };
-
-  const executeRoll = (playerNum) => {
-    if (config.regions.length === 0 || config.types.length === 0) return;
-    setDraftState(prev => ({ ...prev, rolling: true, availablePokemon: [] }));
-
-    let ticks = 0;
-    rollIntervalRef.current = setInterval(() => {
-      const randReg = config.regions[Math.floor(Math.random() * config.regions.length)];
-      const randTyp = config.types[Math.floor(Math.random() * config.types.length)];
-      setDraftState(prev => ({ ...prev, currentRoll: { region: randReg, type: randTyp } }));
-      
-      ticks++;
-      if (ticks > 15) {
-        clearInterval(rollIntervalRef.current);
-        fetchPokemonForRoll(randReg, randTyp, playerNum);
+  const handleRoll = () => {
+    if (currentRerolls <= 0 && currentRollTarget.region) return;
+    setIsRolling(true);
+    
+    let rollCount = 0;
+    const rollInterval = setInterval(() => {
+      setCurrentRollTarget({
+        region: selectedRegions[Math.floor(Math.random() * selectedRegions.length)],
+        type: selectedTypes[Math.floor(Math.random() * selectedTypes.length)]
+      });
+      rollCount++;
+      if (rollCount > 10) {
+        clearInterval(rollInterval);
+        setIsRolling(false);
+        if (currentRollTarget.region) setCurrentRerolls(prev => prev - 1);
+        
+        // Simuler la récupération des Pokémon
+        setTimeout(() => {
+          setAvailablePokemon(MOCK_POKEDEX.slice(0, 10 + Math.floor(Math.random() * 5)));
+        }, 300);
       }
     }, 100);
   };
 
-  const fetchPokemonForRoll = async (regionName, typeName, playerNum) => {
-    setDraftState(prev => ({ ...prev, rolling: false, loading: true }));
-    const regionData = REGIONS.find(r => r.name === regionName);
-    const typeEn = TYPES[typeName];
-
-    try {
-      const res = await fetch(`https://pokeapi.co/api/v2/type/${typeEn}`);
-      const data = await res.json();
-      
-      const filtered = data.pokemon
-        .map(p => {
-          const id = parseInt(p.pokemon.url.split('/').slice(-2, -1)[0]);
-          return { id, name: p.pokemon.name };
-        })
-        .filter(p => p.id >= regionData.range[0] && p.id <= regionData.range[1]);
-
-      const detailed = await Promise.all(filtered.map(async p => {
-        const pRes = await fetch(`https://pokeapi.co/api/v2/pokemon/${p.id}`);
-        const pData = await pRes.json();
-        return {
-          id: p.id,
-          name: pData.name,
-          sprite: pData.sprites.front_default || pData.sprites.other['official-artwork'].front_default,
-          types: pData.types.map(t => Object.keys(TYPES).find(key => TYPES[key] === t.type.name) || t.type.name),
-          stats: pData.stats
-        };
-      }));
-
-      setDraftState(prev => {
-        const newState = { ...prev, availablePokemon: detailed, loading: false };
-        if (mode === 'ordi' && playerNum === 2) {
-           setTimeout(() => handleCPUTurn(newState), 1000);
-        }
-        return newState;
-      });
-    } catch (error) {
-      console.error("Fetch error:", error);
-      setDraftState(prev => ({ ...prev, loading: false }));
-    }
-  };
-
-  const handleCPUTurn = (currentState) => {
-      const validPokemon = currentState.availablePokemon.filter(p => config.allowReuse || !currentState.usedPokemonIds.includes(p.id));
-      
-      if (validPokemon.length > 0) {
-          // Heuristic weights
-          const scored = validPokemon.map(p => {
-              let score = 10;
-              if (LEGENDARIES.includes(p.id)) score = 100;
-              else if (MYTHICALS.includes(p.id) || PSEUDOS.includes(p.id)) score = 80;
-              else {
-                  // Approximation for fully evolved (BST > 450)
-                  const bst = p.stats.reduce((acc, stat) => acc + stat.base_stat, 0);
-                  if (bst > 450) score = 50;
-                  else score = 20;
-              }
-              return { ...p, score };
-          });
-
-          // Weighted random selection
-          const totalScore = scored.reduce((acc, p) => acc + p.score, 0);
-          let randomVal = Math.random() * totalScore;
-          let selected = scored[0];
-          for (let p of scored) {
-              randomVal -= p.score;
-              if (randomVal <= 0) {
-                  selected = p;
-                  break;
-              }
-          }
-          selectPokemon(selected, 2, currentState);
-      } else if (currentState.rerollsLeft > 0) {
-          handleReroll(2);
+  const selectPokemon = (pokemon) => {
+    if (mode === 'solo') {
+      const newTeam = [...team1];
+      const emptyIndex = newTeam.findIndex(p => p === null);
+      if (emptyIndex !== -1) {
+        newTeam[emptyIndex] = pokemon;
+        setTeam1(newTeam);
+        if (emptyIndex === 5) prepareBattle(newTeam, null);
+        else resetRollForNext();
+      }
+    } else if (mode === '1v1') {
+      if (currentTurn === 1) {
+        const newTeam = [...team1];
+        const idx = newTeam.findIndex(p => p === null);
+        newTeam[idx] = pokemon;
+        setTeam1(newTeam);
+        setCurrentTurn(2);
       } else {
-          // CPU passes turn if forced
-          selectPokemon(null, 2, currentState);
+        const newTeam = [...team2];
+        const idx = newTeam.findIndex(p => p === null);
+        newTeam[idx] = pokemon;
+        setTeam2(newTeam);
+        setCurrentTurn(1);
+        if (idx === 5) prepareBattle(team1, newTeam);
       }
-  };
-
-  const selectPokemon = (pokemon, playerNum, forceState = null) => {
-    const stateToUse = forceState || draftState;
-    if (pokemon && !config.allowReuse && stateToUse.usedPokemonIds.includes(pokemon.id)) return;
-
-    setDraftState(prev => {
-      const isP1 = playerNum === 1;
-      const newTeam1 = isP1 && pokemon ? [...prev.team1, pokemon] : prev.team1;
-      const newTeam2 = !isP1 && pokemon ? [...prev.team2, pokemon] : prev.team2;
-      const newUsed = pokemon ? [...prev.usedPokemonIds, pokemon.id] : prev.usedPokemonIds;
-
-      const p1Done = newTeam1.length >= 6;
-      const p2Done = (mode === 'solo' ? true : newTeam2.length >= 6);
-
-      if (p1Done && p2Done) {
-        simulateBattles(newTeam1, newTeam2);
-        return { ...prev, team1: newTeam1, team2: newTeam2, usedPokemonIds: newUsed };
-      }
-
-      let nextPlayer = 1;
-      if (mode === '1v1') nextPlayer = isP1 ? (p2Done ? 1 : 2) : (p1Done ? 2 : 1);
-      if (mode === 'ordi') nextPlayer = isP1 ? 2 : 1;
-
-      setTimeout(() => executeRoll(nextPlayer), 100);
-
-      return {
-        ...prev,
-        team1: newTeam1, team2: newTeam2, usedPokemonIds: newUsed,
-        activePlayer: nextPlayer, rerollsLeft: config.rerolls
-      };
-    });
-  };
-
-  const handleReroll = (playerNum = draftState.activePlayer) => {
-    if (draftState.rerollsLeft > 0 && !draftState.rolling) {
-      setDraftState(prev => ({ ...prev, rerollsLeft: prev.rerollsLeft - 1 }));
-      executeRoll(playerNum);
+      resetRollForNext();
+    } else if (mode === 'pc') {
+      const newTeam1 = [...team1];
+      const idx = newTeam1.findIndex(p => p === null);
+      newTeam1[idx] = pokemon;
+      setTeam1(newTeam1);
+      
+      // Sélection de l'ordi avec probabilités
+      const pcChoice = MOCK_POKEDEX[Math.floor(Math.random() * MOCK_POKEDEX.length)]; 
+      // (Logique de pondération simplifiée ici pour la fluidité)
+      
+      const newTeam2 = [...team2];
+      newTeam2[idx] = pcChoice;
+      setTeam2(newTeam2);
+      
+      if (idx === 5) prepareBattle(newTeam1, newTeam2);
+      else resetRollForNext();
     }
   };
 
-  const simulateBattles = (team1, team2) => {
-    const trainers = generateMockTrainers(config.regions);
-    
-    const calcWinRate = (team) => {
-        let rate = DIFFICULTIES[config.difficulty].baseWinRate;
-        team.forEach(p => {
-            if (LEGENDARIES.includes(p.id)) rate += 3;
-            if (MYTHICALS.includes(p.id)) rate += 2;
-            if (PSEUDOS.includes(p.id)) rate += 2;
-        });
-        return Math.min(100, rate);
-    };
-
-    const rate1 = calcWinRate(team1);
-    const rate2 = mode === 'solo' ? 0 : calcWinRate(team2);
-
-    let w1 = 0, l1 = 0, w2 = 0, l2 = 0;
-    const battleLog = trainers.map(trainer => {
-        const t1Win = (Math.random() * 100) <= rate1;
-        const t2Win = mode !== 'solo' ? ((Math.random() * 100) <= rate2) : false;
-        
-        if (t1Win) w1++; else l1++;
-        if (mode !== 'solo') {
-            if (t2Win) w2++; else l2++;
-        }
-        return { trainer, t1Win, t2Win };
-    });
-
-    setBattleResults({ 
-        team1: { wins: w1, losses: l1, rate: rate1 },
-        team2: { wins: w2, losses: l2, rate: rate2 },
-        log: battleLog,
-        trainers
-    });
-    setGameState('results');
+  const resetRollForNext = () => {
+    setAvailablePokemon([]);
+    setCurrentRollTarget({ region: null, type: null });
+    setCurrentRerolls(maxRerolls);
   };
 
-  if (gameState === 'menu') {
-    return (
-      <div className={`min-h-screen p-4 transition-colors duration-1000 ${currentTheme} text-white font-sans`}>
-        <div className={`max-w-2xl mx-auto space-y-6 pt-10 p-8 ${glassCard}`}>
-          <h1 className="text-4xl font-bold text-center mb-8 drop-shadow-md">Poké Draft Simulator</h1>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            {['solo', 'ordi', '1v1'].map((m) => (
-                <button 
-                key={m} onClick={() => setMode(m)}
-                className={`p-4 rounded-xl flex flex-col items-center gap-2 border-2 transition-all duration-300 ${mode === m ? 'border-white bg-white/30 scale-105' : 'border-transparent bg-black/20 hover:bg-white/10'}`}
-                >
-                {m === 'solo' ? <User size={32} /> : m === 'ordi' ? <Swords size={32} /> : <Users size={32} />}
-                <span className="capitalize">{m === 'ordi' ? "Vs Ordi" : m}</span>
-                </button>
+  const calculateTeamWinRate = (team) => {
+    const baseProb = difficulty === 'easy' ? 80 : difficulty === 'normal' ? 65 : 50;
+    let bonus = 0;
+    team.forEach(p => {
+      if (p.isLegendary) bonus += 3;
+      if (p.isMythical) bonus += 2;
+    });
+    return baseProb + bonus;
+  };
+
+  const prepareBattle = (t1, t2) => {
+    const p1Prob = calculateTeamWinRate(t1);
+    const p2Prob = t2 ? calculateTeamWinRate(t2) : 0;
+    
+    const relevantTrainers = TRAINERS_DB.filter(t => selectedRegions.includes(t.region));
+    
+    const results = relevantTrainers.map(trainer => {
+      const p1Win = (Math.random() * 100) < p1Prob;
+      const p2Win = t2 ? (Math.random() * 100) < p2Prob : false;
+      return { trainer, p1Win, p2Win };
+    });
+    
+    setBattleResults(results);
+    setPhase('battle');
+    setRevealedCount(0); // Réinitialiser le compteur de révélation
+  };
+
+  // Révélation progressive des combats
+  useEffect(() => {
+    if (phase === 'battle' && battleResults.length > 0) {
+      const timer = setInterval(() => {
+        setRevealedCount(prev => {
+          if (prev < battleResults.length) return prev + 1;
+          clearInterval(timer);
+          return prev;
+        });
+      }, 150); // 150ms par dresseur (Moins d'1.5s garanti)
+      
+      return () => clearInterval(timer);
+    }
+  }, [phase, battleResults.length]);
+
+  const resetGame = () => {
+    setTeam1(Array(6).fill(null));
+    setTeam2(Array(6).fill(null));
+    setCurrentTurn(1);
+    resetRollForNext();
+    setPhase('draft');
+  };
+
+  // --- RENDU DES INTERFACES ---
+
+  const renderMenu = () => (
+    <div className="flex flex-col items-center p-6 space-y-6 w-full max-w-lg mx-auto">
+      <h1 className="text-5xl text-white font-bold mb-4 drop-shadow-lg text-center" style={{fontFamily: "'VT323', monospace"}}>POKÉ DRAFT</h1>
+      
+      <div className="glass-panel p-4 flex gap-2 w-full justify-center">
+        {['solo', 'pc', '1v1'].map(m => (
+          <button 
+            key={m}
+            onClick={() => setMode(m)}
+            className={`px-6 py-2 rounded-xl transition-all duration-300 ${mode === m ? 'bg-white/30 border-2 border-white/60 shadow-[inset_0_0_10px_rgba(255,255,255,0.5)]' : 'bg-black/20 hover:bg-black/30'} text-white font-bold uppercase tracking-wider`}
+            style={{fontFamily: "'VT323', monospace", fontSize: '1.2rem'}}
+          >
+            {m}
+          </button>
+        ))}
+      </div>
+
+      <div className="glass-panel p-6 w-full space-y-4 text-white">
+        <div>
+          <label className="block text-xl mb-2 font-bold" style={{fontFamily: "'VT323', monospace"}}>Difficulté</label>
+          <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="w-full bg-black/30 border border-white/20 rounded p-2 text-white outline-none">
+            <option value="easy">Easy (80% Base)</option>
+            <option value="normal">Normal (65% Base)</option>
+            <option value="hard">Hard (50% Base)</option>
+          </select>
+        </div>
+        
+        <div>
+          <label className="block text-xl mb-2 font-bold" style={{fontFamily: "'VT323', monospace"}}>Nombre de Rerolls ({maxRerolls})</label>
+          <input type="range" min="0" max="10" value={maxRerolls} onChange={(e) => setMaxRerolls(Number(e.target.value))} className="w-full accent-white" />
+        </div>
+
+        <button 
+          onClick={() => { resetRollForNext(); setPhase('draft'); }}
+          className="w-full py-4 mt-6 bg-white/20 hover:bg-white/30 border border-white/40 rounded-2xl text-2xl font-bold transition-all shadow-lg backdrop-blur-md"
+          style={{fontFamily: "'VT323', monospace"}}
+        >
+          LANCER LA PARTIE
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderDraft = () => (
+    <div className="flex flex-col h-full w-full max-w-2xl mx-auto p-4 space-y-4">
+      {/* Affichage des Équipes */}
+      <div className="glass-panel p-4 space-y-4">
+        <div className={`transition-all duration-300 ${currentTurn === 1 ? 'scale-105 shadow-[0_0_15px_rgba(255,255,255,0.5)] rounded-xl' : 'opacity-70'}`}>
+          <p className="text-white text-center font-bold mb-2" style={{fontFamily: "'VT323', monospace", fontSize: '1.2rem'}}>
+            {mode === 'solo' ? 'TON ÉQUIPE' : 'ÉQUIPE JOUEUR 1'}
+          </p>
+          <div className="flex gap-2 justify-center">
+            {team1.map((p, i) => (
+              <div key={i} className={`w-12 h-12 md:w-16 md:h-16 rounded bg-black/40 border ${p ? 'border-white/40' : 'border-white/10 border-dashed'} flex items-center justify-center`}>
+                {p && <img src={p.sprite} alt="poke" className="w-full h-full object-contain drop-shadow-md" />}
+              </div>
             ))}
           </div>
+        </div>
 
-          {mode && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-              <div>
-                <h3 className="font-semibold mb-2">Options de jeu</h3>
-                <label className="flex items-center gap-2 text-sm bg-black/20 p-3 rounded-lg cursor-pointer w-fit">
-                    <input type="checkbox" checked={config.allowReuse} onChange={(e) => setConfig({...config, allowReuse: e.target.checked})} />
-                    Autoriser les doublons (même Pokémon)
-                </label>
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-2 flex justify-between">Régions <span className="text-xs opacity-70">Sélectionnez au moins une</span></h3>
-                <div className="flex flex-wrap gap-2">
-                  {REGIONS.map(r => (
-                    <label key={r.name} className={`flex items-center gap-1 text-sm p-2 rounded-lg cursor-pointer border transition-colors ${config.regions.includes(r.name) ? 'bg-white/20 border-white/50' : 'bg-black/20 border-transparent opacity-60'}`}>
-                      <input type="checkbox" className="hidden" checked={config.regions.includes(r.name)} onChange={(e) => {
-                          const newReg = e.target.checked ? [...config.regions, r.name] : config.regions.filter(x => x !== r.name);
-                          setConfig({...config, regions: newReg});
-                        }}
-                      />
-                      {r.name}
-                    </label>
-                  ))}
+        {mode !== 'solo' && (
+          <div className={`transition-all duration-300 ${currentTurn === 2 ? 'scale-105 shadow-[0_0_15px_rgba(255,100,100,0.5)] rounded-xl' : 'opacity-70'}`}>
+            <p className="text-white text-center font-bold mb-2" style={{fontFamily: "'VT323', monospace", fontSize: '1.2rem'}}>
+              {mode === 'pc' ? 'ÉQUIPE ORDI' : 'ÉQUIPE JOUEUR 2'}
+            </p>
+            <div className="flex gap-2 justify-center">
+              {team2.map((p, i) => (
+                <div key={i} className={`w-12 h-12 md:w-16 md:h-16 rounded bg-black/40 border ${p ? 'border-white/40' : 'border-white/10 border-dashed'} flex items-center justify-center`}>
+                  {p && <img src={p.sprite} alt="poke" className="w-full h-full object-contain drop-shadow-md" />}
                 </div>
-              </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <h3 className="font-semibold mb-2">Difficulté</h3>
-                    <select className="w-full p-3 rounded-lg bg-black/30 text-white border border-white/20 outline-none focus:border-white"
-                        value={config.difficulty} onChange={e => setConfig({...config, difficulty: e.target.value})}>
-                        {Object.entries(DIFFICULTIES).map(([k, v]) => (
-                            <option key={k} value={k} className="text-black">{v.label} ({v.baseWinRate}%)</option>
-                        ))}
-                    </select>
-                </div>
-                <div>
-                    <h3 className="font-semibold mb-2">Re-rolls</h3>
-                    <input type="number" min="0" max="10" className="w-full p-3 rounded-lg bg-black/30 text-white border border-white/20 outline-none focus:border-white"
-                        value={config.rerolls} onChange={e => setConfig({...config, rerolls: parseInt(e.target.value) || 0})} />
-                </div>
-              </div>
+      {/* Machine à Roll */}
+      <div className="glass-panel p-6 flex flex-col items-center justify-center">
+        <div className="flex gap-4 mb-6">
+          <div className="bg-black/50 border-2 border-white/30 rounded-lg p-4 w-32 h-20 flex items-center justify-center overflow-hidden">
+            <span className={`text-2xl text-white font-bold ${isRolling ? 'animate-pulse' : ''}`} style={{fontFamily: "'VT323', monospace"}}>
+              {currentRollTarget.region || '???'}
+            </span>
+          </div>
+          <div className="bg-black/50 border-2 border-white/30 rounded-lg p-4 w-32 h-20 flex items-center justify-center overflow-hidden">
+            <span className={`text-2xl text-white font-bold ${isRolling ? 'animate-pulse' : ''}`} style={{fontFamily: "'VT323', monospace"}}>
+              {currentRollTarget.type || '???'}
+            </span>
+          </div>
+        </div>
+        
+        <button 
+          onClick={handleRoll}
+          disabled={isRolling || (currentRerolls <= 0 && currentRollTarget.region)}
+          className="px-8 py-3 bg-white/20 hover:bg-white/30 disabled:opacity-50 border border-white/50 rounded-full text-white font-bold text-2xl transition-all active:scale-95"
+          style={{fontFamily: "'VT323', monospace"}}
+        >
+          {currentRollTarget.region ? `RE-ROLL (${currentRerolls})` : 'ROLL !'}
+        </button>
+      </div>
 
-              <button onClick={startDraft} className="w-full py-4 mt-4 bg-white/20 hover:bg-white/30 border border-white/40 text-white rounded-xl font-bold text-lg shadow-lg backdrop-blur-md transition-all active:scale-95">
-                Lancer la partie
-              </button>
+      {/* Sélection Pokémon */}
+      {availablePokemon.length > 0 && (
+        <div className="glass-panel p-4 flex-1 overflow-y-auto">
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+            {availablePokemon.map(p => (
+              <div 
+                key={p.id} 
+                onClick={() => selectPokemon(p)}
+                className="bg-black/20 hover:bg-white/10 border border-white/10 rounded-lg p-2 cursor-pointer transition-all flex flex-col items-center hover:scale-105 active:scale-95"
+              >
+                <img src={p.sprite} alt={p.name} className="w-16 h-16 drop-shadow-lg" />
+                <span className="text-white text-sm mt-1 text-center" style={{fontFamily: "'VT323', monospace"}}>{p.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderBattle = () => {
+    const p1Wins = battleResults.filter(r => r.p1Win).length;
+    const p2Wins = battleResults.filter(r => r.p2Win).length;
+    const total = battleResults.length;
+
+    // Regrouper les résultats révélés par région
+    const revealedResults = battleResults.slice(0, revealedCount);
+    const resultsByRegion = revealedResults.reduce((acc, result) => {
+      if (!acc[result.trainer.region]) acc[result.trainer.region] = [];
+      acc[result.trainer.region].push(result);
+      return acc;
+    }, {});
+
+    return (
+      <div className="flex flex-col h-full w-full max-w-4xl mx-auto p-4 space-y-4">
+        {/* Header Scores */}
+        <div className="glass-panel p-4 flex justify-between items-center text-white" style={{fontFamily: "'VT323', monospace"}}>
+          <div className="flex flex-col items-center">
+            <span className="text-xl">JOUEUR 1</span>
+            <span className="text-3xl text-emerald-400">{p1Wins} - {total - p1Wins}</span>
+          </div>
+          
+          <div className="flex gap-4">
+            <button onClick={resetGame} className="px-4 py-2 bg-white/20 rounded hover:bg-white/30 border border-white/30 transition-all">RETRY</button>
+            <button onClick={() => setPhase('menu')} className="px-4 py-2 bg-white/20 rounded hover:bg-white/30 border border-white/30 transition-all">HOME</button>
+          </div>
+
+          {mode !== 'solo' && (
+            <div className="flex flex-col items-center">
+              <span className="text-xl">{mode === 'pc' ? 'ORDI' : 'JOUEUR 2'}</span>
+              <span className="text-3xl text-rose-400">{p2Wins} - {total - p2Wins}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Liste des Combats Groupés par Région */}
+        <div className="glass-panel flex-1 p-4 overflow-y-auto space-y-6">
+          {Object.entries(resultsByRegion).map(([region, results]) => (
+            <div key={region} className="space-y-2">
+              <h2 className="text-2xl text-white border-b border-white/20 pb-1 mb-3" style={{fontFamily: "'VT323', monospace"}}>{region}</h2>
+              <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-2">
+                {results.map((r, i) => (
+                  <div key={i} className="bg-black/30 rounded flex flex-col overflow-hidden border border-white/10 animate-fade-in">
+                    {/* Avatar stylisé (généré via dicebear pixel-art) */}
+                    <div className="h-12 w-full bg-black/40 flex items-center justify-center p-1 relative">
+                       <img src={`https://api.dicebear.com/7.x/pixel-art/svg?seed=${r.trainer.name}`} alt={r.trainer.name} className="h-full w-full object-contain" />
+                       <span className="absolute bottom-0 right-0 bg-black/80 text-[8px] text-white px-1 font-bold" style={{fontFamily: "'VT323', monospace"}}>{r.trainer.role.toUpperCase()}</span>
+                    </div>
+                    
+                    <div className="p-1 flex flex-col items-center bg-black/50">
+                      <span className="text-white text-xs truncate w-full text-center" style={{fontFamily: "'VT323', monospace"}}>{r.trainer.name}</span>
+                      <div className="flex gap-1 mt-1 w-full h-1.5">
+                        <div className={`flex-1 rounded-sm ${r.p1Win ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                        {mode !== 'solo' && (
+                          <div className={`flex-1 rounded-sm ${r.p2Win ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          
+          {revealedCount < battleResults.length && (
+            <div className="text-center text-white/50 text-xl animate-pulse py-4" style={{fontFamily: "'VT323', monospace"}}>
+              Combats en cours...
             </div>
           )}
         </div>
       </div>
     );
-  }
+  };
 
-  if (gameState === 'draft') {
-      const TeamSlots = ({ team, label, isActive }) => (
-          <div className={`p-4 rounded-xl transition-all duration-500 ${isActive ? 'bg-white/20 border-white/50 ring-2 ring-white ring-offset-2 ring-offset-transparent' : 'bg-black/20 border-transparent opacity-80'} border`}>
-              <h2 className="font-bold mb-2 text-center text-white">{label} ({team.length}/6)</h2>
-              <div className={`flex flex-wrap gap-2 justify-center ${mode === 'solo' ? 'md:gap-4' : ''}`}>
-                  {[...Array(6)].map((_, i) => (
-                      <div key={i} className={`${mode === 'solo' ? 'w-16 h-16 md:w-24 md:h-24' : 'w-12 h-12'} rounded-lg bg-black/40 border border-white/20 flex items-center justify-center overflow-hidden`}>
-                          {team[i] && <img src={team[i].sprite} alt={team[i].name} className="w-full h-full object-contain drop-shadow-lg" />}
-                      </div>
-                  ))}
-              </div>
-          </div>
-      );
-
-      return (
-          <div className={`min-h-screen flex flex-col text-white transition-colors duration-500 ${currentTheme}`}>
-              <div className="sticky top-0 z-10 p-4 backdrop-blur-xl border-b border-white/10 shadow-lg bg-black/10">
-                  <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-center gap-4">
-                      <TeamSlots team={draftState.team1} label="Joueur 1" isActive={draftState.activePlayer === 1} />
-                      {mode !== 'solo' && (
-                          <TeamSlots team={draftState.team2} label={mode === 'ordi' ? "Ordinateur" : "Joueur 2"} isActive={draftState.activePlayer === 2} />
-                      )}
-                  </div>
-              </div>
-
-              <div className="flex-1 p-6 max-w-4xl mx-auto w-full flex flex-col items-center">
-                  <div className={`w-full md:w-2/3 ${glassCard} p-6 text-center mb-8`}>
-                      <h3 className="text-xl opacity-80 mb-4">
-                          {draftState.activePlayer === 2 && mode === 'ordi' ? "L'ordinateur réfléchit..." : "Tirage en cours"}
-                      </h3>
-                      <div className="text-4xl md:text-5xl font-black tracking-wider uppercase bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70 drop-shadow-md mb-6 h-16 flex items-center justify-center">
-                          {draftState.currentRoll ? `${draftState.currentRoll.region} - ${draftState.currentRoll.type}` : "..."}
-                      </div>
-                      
-                      {draftState.activePlayer !== 2 || mode !== 'ordi' ? (
-                        <div className="flex justify-center items-center gap-6">
-                            <span className="text-lg bg-black/30 px-4 py-2 rounded-lg">Rerolls: {draftState.rerollsLeft}</span>
-                            <button onClick={() => handleReroll()} disabled={draftState.rerollsLeft === 0 || draftState.loading || draftState.rolling}
-                                className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-6 py-2 rounded-lg font-bold disabled:opacity-40 transition-colors">
-                                <RefreshCw size={20} className={draftState.rolling ? "animate-spin" : ""} /> Relancer
-                            </button>
-                        </div>
-                      ) : null}
-                  </div>
-
-                  <div className="w-full">
-                      {draftState.loading || draftState.rolling ? (
-                          <div className="text-center py-12 text-2xl animate-pulse">Chargement des données...</div>
-                      ) : (
-                          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 pb-20">
-                              {draftState.availablePokemon.length === 0 ? (
-                                  <div className="col-span-full text-center py-10 text-xl opacity-60">Aucun Pokémon trouvé. Utilisez un reroll !</div>
-                              ) : (
-                                  draftState.availablePokemon.map(p => {
-                                      const isUsed = !config.allowReuse && draftState.usedPokemonIds.includes(p.id);
-                                      return (
-                                          <button key={p.id} disabled={isUsed || (draftState.activePlayer === 2 && mode === 'ordi')}
-                                              onClick={() => selectPokemon(p, draftState.activePlayer)}
-                                              className={`relative flex flex-col items-center p-3 rounded-xl transition-all duration-200 
-                                                  ${isUsed ? 'bg-red-900/40 border-red-500/50 grayscale cursor-not-allowed' : 'bg-white/10 hover:bg-white/20 border-white/20 hover:scale-105 active:scale-95 cursor-pointer'} border backdrop-blur-sm shadow-md`}>
-                                              
-                                              {isUsed && <div className="absolute inset-0 bg-red-900/20 rounded-xl z-10 pointer-events-none" />}
-                                              <img src={p.sprite} alt={p.name} className="w-24 h-24 object-contain drop-shadow-md z-0" loading="lazy" />
-                                              <span className="font-bold capitalize text-sm truncate w-full text-center mt-2 z-0">{p.name}</span>
-                                              <div className="flex gap-1 mt-1 z-0">
-                                                  {p.types.map(t => <span key={t} className="text-[10px] px-2 py-0.5 bg-black/40 rounded-full opacity-80">{t}</span>)}
-                                              </div>
-                                          </button>
-                                      );
-                                  })
-                              )}
-                          </div>
-                      )}
-                  </div>
-              </div>
-          </div>
-      );
-  }
-
-  if (gameState === 'results') {
-      const getWinner = () => {
-          if (mode === 'solo') return null;
-          if (battleResults.team1.wins > battleResults.team2.wins) return "Joueur 1 Gagne !";
-          if (battleResults.team2.wins > battleResults.team1.wins) return mode === 'ordi' ? "L'Ordinateur Gagne !" : "Joueur 2 Gagne !";
-          return "Égalité !";
-      };
-
-      const groupedTrainers = battleResults.trainers.reduce((acc, t, i) => {
-          if (!acc[t.region]) acc[t.region] = [];
-          acc[t.region].push({ ...t, index: i });
-          return acc;
-      }, {});
-
-      return (
-          <div className={`min-h-screen p-4 md:p-8 text-white transition-colors duration-1000 ${currentTheme}`}>
-              <div className="max-w-6xl mx-auto space-y-8">
-                  
-                  <div className="flex justify-between items-center bg-black/20 p-4 rounded-2xl backdrop-blur-md">
-                      <h1 className="text-3xl font-bold">Rapport de Combat</h1>
-                      <div className="flex gap-3">
-                          <button onClick={startDraft} className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-xl hover:bg-white/30 transition-colors"><RotateCcw size={20}/> Rejouer</button>
-                          <button onClick={() => setGameState('menu')} className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-xl hover:bg-white/30 transition-colors"><Home size={20}/> Menu</button>
-                      </div>
-                  </div>
-
-                  {mode !== 'solo' && (
-                      <div className={`text-center py-8 rounded-3xl text-5xl font-black uppercase tracking-widest ${glassCard} border-white/40 shadow-2xl bg-white/20`}>
-                          {getWinner()}
-                      </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      {/* Joueur 1 Stats */}
-                      <div className={`${glassCard} p-6 text-center`}>
-                          <h2 className="text-2xl font-bold mb-4">Joueur 1</h2>
-                          <div className="text-6xl font-black mb-2">{battleResults.team1.wins} - {battleResults.team1.losses}</div>
-                          <p className="opacity-70 mb-6">Taux de victoire : {battleResults.team1.rate}%</p>
-                          <div className="flex flex-wrap justify-center gap-2">
-                              {draftState.team1.map((p, i) => (
-                                  <div key={i} className="w-16 h-16 bg-black/30 rounded-xl p-1 border border-white/20"><img src={p.sprite} alt={p.name} className="w-full h-full object-contain drop-shadow-md"/></div>
-                              ))}
-                          </div>
-                      </div>
-
-                      {/* Joueur 2 Stats */}
-                      {mode !== 'solo' && (
-                          <div className={`${glassCard} p-6 text-center`}>
-                              <h2 className="text-2xl font-bold mb-4">{mode === 'ordi' ? "Ordinateur" : "Joueur 2"}</h2>
-                              <div className="text-6xl font-black mb-2">{battleResults.team2.wins} - {battleResults.team2.losses}</div>
-                              <p className="opacity-70 mb-6">Taux de victoire : {battleResults.team2.rate}%</p>
-                              <div className="flex flex-wrap justify-center gap-2">
-                                  {draftState.team2.map((p, i) => (
-                                      <div key={i} className="w-16 h-16 bg-black/30 rounded-xl p-1 border border-white/20"><img src={p.sprite} alt={p.name} className="w-full h-full object-contain drop-shadow-md"/></div>
-                                  ))}
-                              </div>
-                          </div>
-                      )}
-                  </div>
-
-                  {/* Liste des Combats */}
-                  <div className={`${glassCard} p-6`}>
-                      <h2 className="text-2xl font-bold mb-6 text-center">Détails des Combats par Région</h2>
-                      
-                      <div className="space-y-12">
-                          {Object.entries(groupedTrainers).map(([region, trainers]) => (
-                              <div key={region}>
-                                  <h3 className="text-xl font-bold uppercase tracking-wider mb-4 border-b border-white/20 pb-2 text-white/90">{region}</h3>
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                      {trainers.map((t) => {
-                                          const res1 = battleResults.log[t.index].t1Win;
-                                          const res2 = mode !== 'solo' ? battleResults.log[t.index].t2Win : null;
-
-                                          return (
-                                              <div key={t.index} className="bg-black/30 rounded-xl overflow-hidden border border-white/10 flex flex-col relative">
-                                                  <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 rounded text-[10px] uppercase font-bold tracking-wider z-10">
-                                                      {t.rank}
-                                                  </div>
-                                                  <div className="h-32 w-full bg-black/40 flex items-center justify-center p-2">
-                                                      {/* Placeholder sprite using UI avatars for robustness if link fails */}
-                                                      <img src={t.sprite} alt={t.name} className="h-full object-contain pixelated drop-shadow-md" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }}/>
-                                                      <div className="hidden h-full w-full items-center justify-center text-3xl font-black text-white/20">{t.name[0]}</div>
-                                                  </div>
-                                                  <div className="p-3 bg-white/5">
-                                                      <p className="font-bold text-center mb-2 truncate">{t.name}</p>
-                                                      <div className="flex flex-col gap-1 text-sm font-semibold">
-                                                          <div className={`p-1 text-center rounded ${res1 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
-                                                              J1: {res1 ? 'VICTOIRE' : 'DÉFAITE'}
-                                                          </div>
-                                                          {mode !== 'solo' && (
-                                                              <div className={`p-1 text-center rounded ${res2 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
-                                                                  {mode === 'ordi' ? 'CPU' : 'J2'}: {res2 ? 'VICTOIRE' : 'DÉFAITE'}
-                                                              </div>
-                                                          )}
-                                                      </div>
-                                                  </div>
-                                              </div>
-                                          );
-                                      })}
-                                  </div>
-                              </div>
-                          ))}
-                      </div>
-                  </div>
-              </div>
-          </div>
-      );
-  }
-
-  return null;
+  return (
+    <div className={`min-h-screen w-full transition-colors duration-700 ${getThemeClasses()} overflow-hidden`}>
+      <style dangerouslySetInnerHTML={{__html: `
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+        .glass-panel {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 1.5rem;
+          box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.3s ease-out forwards;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.9); }
+          to { opacity: 1; transform: scale(1); }
+        }
+      `}} />
+      <div className="h-screen w-full flex flex-col">
+        {phase === 'menu' && renderMenu()}
+        {phase === 'draft' && renderDraft()}
+        {phase === 'battle' && renderBattle()}
+      </div>
+    </div>
+  );
 }
